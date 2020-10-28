@@ -19,11 +19,19 @@ Implements IValueValidator
 Private Type TState
     Min As Variant
     Max As Variant
+    Compare As ValueRangeType
 End Type
+
+Public Enum ValueRangeType
+    Auto
+    NumericValueRange
+    StringValueRange
+    DateValueRange
+End Enum
 
 Private This As TState
 
-Public Function Create(ByVal Min As Variant, ByVal Max As Variant) As IValueValidator
+Public Function Create(ByVal Min As Variant, ByVal Max As Variant, Optional ByVal Compare As ValueRangeType) As IValueValidator
     Dim Result As ValueRangeValidator
     Set Result = New ValueRangeValidator
     Result.Min = Min
@@ -47,9 +55,44 @@ Public Property Let Max(ByVal RHS As Variant)
     This.Max = RHS
 End Property
 
+Public Property Get Compare() As ValueRangeType
+    Compare = This.Compare
+End Property
+
+Public Property Let Compare(ByVal RHS As ValueRangeType)
+    This.Compare = RHS
+End Property
+
 Private Function IValueValidator_IsValid(ByVal Value As Variant, ByVal Source As IBindingPath, ByVal Target As IBindingPath) As Boolean
     If IsObject(Value) Or IsArray(Value) Or IsEmpty(Value) Or IsError(Value) Then Exit Function
-    IValueValidator_IsValid = Value >= This.Min And Value <= This.Max
+    
+    Dim Result As Boolean
+    If IsNumeric(Value) Or This.Compare = NumericValueRange Then
+        Result = IsValidNumber(CDbl(Value))
+    
+    ElseIf IsDate(Value) Or This.Compare = DateValueRange Then
+        Result = IsValidDate(CDate(Value))
+    
+    ElseIf VarType(Value) = vbString Or This.Compare = StringValueRange Then
+        Result = IsValidString(CStr(Value))
+    
+    Else
+        Result = Value >= This.Min And Value <= This.Max
+        
+    End If
+    IValueValidator_IsValid = Result
+End Function
+
+Private Function IsValidNumber(ByVal Value As Double) As Boolean
+    IsValidNumber = Value >= CDbl(This.Min) And Value <= CDbl(This.Max)
+End Function
+
+Private Function IsValidString(ByVal Value As String) As Boolean
+    IsValidString = Value >= CStr(This.Min) And Value <= CStr(This.Max)
+End Function
+
+Private Function IsValidDate(ByVal Value As Date) As Boolean
+    IsValidDate = Value >= CDate(This.Min) And Value <= CDate(This.Max)
 End Function
 
 Private Property Get IValueValidator_Message() As String
