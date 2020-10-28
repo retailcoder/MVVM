@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Attribute VB_Description = "A validator that accepts values between set min and max values. Uses Text comparison for strings."
 '@Folder MVVM.Common.Validators
-'@ModuleDescription "A validator that accepts values between set min and max values. Uses Text comparison for strings."
+'@ModuleDescription "A validator that accepts values between set min and max values."
 '@PredeclaredId
 '@Exposed
 Option Explicit
@@ -23,7 +23,7 @@ Private Type TState
 End Type
 
 Public Enum ValueRangeType
-    Auto
+    VariantDefault
     NumericValueRange
     StringValueRange
     DateValueRange
@@ -31,11 +31,13 @@ End Enum
 
 Private This As TState
 
+'@Description "Creates a new validator that accepts the specified range of values. By default, strings that look like numbers/dates are validated like numbers/dates."
 Public Function Create(ByVal Min As Variant, ByVal Max As Variant, Optional ByVal Compare As ValueRangeType) As IValueValidator
     Dim Result As ValueRangeValidator
     Set Result = New ValueRangeValidator
     Result.Min = Min
     Result.Max = Max
+    Result.Compare = Compare
     Set Create = Result
 End Function
 
@@ -65,21 +67,29 @@ End Property
 
 Private Function IValueValidator_IsValid(ByVal Value As Variant, ByVal Source As IBindingPath, ByVal Target As IBindingPath) As Boolean
     If IsObject(Value) Or IsArray(Value) Or IsEmpty(Value) Or IsError(Value) Then Exit Function
-    
     Dim Result As Boolean
-    If IsNumeric(Value) Or This.Compare = NumericValueRange Then
+    
+    If (This.Compare = VariantDefault And IsNumeric(Value) And IsNumeric(This.Min) And IsNumeric(This.Max)) _
+    Or This.Compare = NumericValueRange Then
+    
         Result = IsValidNumber(CDbl(Value))
     
-    ElseIf IsDate(Value) Or This.Compare = DateValueRange Then
+    ElseIf (This.Compare = VariantDefault And IsDate(Value) And IsDate(This.Min) And IsDate(This.Max)) _
+    Or This.Compare = DateValueRange Then
+    
         Result = IsValidDate(CDate(Value))
     
-    ElseIf VarType(Value) = vbString Or This.Compare = StringValueRange Then
+    ElseIf (This.Compare = VariantDefault And VarType(Value) = vbString And VarType(This.Min) = vbString And VarType(This.Max) = vbString) _
+    Or This.Compare = StringValueRange Then
+    
         Result = IsValidString(CStr(Value))
     
     Else
+    
         Result = Value >= This.Min And Value <= This.Max
         
     End If
+    
     IValueValidator_IsValid = Result
 End Function
 
