@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Attribute VB_Description = "Builds dynamic MSForms UI components from a binding source."
-'@Folder MVVM.Infrastructure.View.Dynamic
+'@Folder "MVVM.Infrastructure.StringFormatting.View.Dynamic"
 '@ModuleDescription "Builds dynamic MSForms UI components from a binding source."
 '@PredeclaredId
 '@Exposed
@@ -54,9 +54,22 @@ Private Sub BindCaptionSource(ByVal Source As Variant, ByVal Target As Object, O
     ElseIf TypeOf Source Is MVVM.IBindingPath Then
         Dim SourcePath As IBindingPath
         Set SourcePath = Source
-        This.Context.Bindings.BindPropertyPath SourcePath.Context, SourcePath.Path, Target, _
-            Converter:=Converter, _
-            StringFormat:=FormatString
+        
+        Dim Binding As IPropertyBinding
+        If FormatString <> vbNullString Then
+        
+            Set Binding = This.Context.Bindings _
+                .BindPropertyPath(SourcePath.Context, SourcePath.Path, Target, _
+                    Converter:=Converter, _
+                    StringFormat:=FormatString)
+        
+        Else
+        
+            Set Binding = This.Context.Bindings _
+                .BindPropertyPath(SourcePath.Context, SourcePath.Path, Target, _
+                    Converter:=Converter)
+                    
+        End If
         
     Else
         GuardClauses.GuardExpression True, TypeName(Me), "Unsupported Source type."
@@ -211,3 +224,4 @@ Private Function IDynamicControlBuilder_TextBoxFor(ByVal SourceValue As IBinding
     Set IDynamicControlBuilder_TextBoxFor = Result
     
 End Function
+

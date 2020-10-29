@@ -13,8 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
+'@Folder MVVM.Example
 Option Explicit
 Implements IView
 Implements ICancellable
@@ -69,16 +68,13 @@ Private Sub InitializeView()
             .Font.Bold = True
         End With
         
-        .LabelFor BindingPath.Create(This.ViewModel, "Instructions")
+        This.ViewModel.SomeItems = Application.Transpose(Sheet1.ListObjects("Table1").DataBodyRange.Value)
         
-        .TextBoxFor BindingPath.Create(This.ViewModel, "StringProperty"), _
-                    Validator:=New RequiredStringValidator, _
-                    TitleSource:="Some String:"
-                    
-        .TextBoxFor BindingPath.Create(This.ViewModel, "CurrencyProperty"), _
-                    FormatString:="{0:C2}", _
-                    Validator:=New DecimalKeyValidator, _
-                    TitleSource:="Some Amount:"
+        .ListBoxFor SourceValue:=BindingPath.Create(This.ViewModel, "SelectedItemIndex"), _
+                    SourceItems:=BindingPath.Create(This.ViewModel, "SomeItems"), _
+                    TitleSource:=BindingPath.Create(This.ViewModel, "Instructions")
+        
+        .LabelFor BindingPath.Create(This.ViewModel, "SelectedItemIndex"), "{0:D4}"
         
         .CommandButtonFor AcceptCommand.Create(Me, This.Context.Validation), This.ViewModel, "Close"
         

@@ -140,6 +140,10 @@ Public Property Get SomeItems() As Variant
     SomeItems = This.SomeItems
 End Property
 
+Public Property Let SomeItems(ByVal RHS As Variant)
+    This.SomeItems = RHS
+End Property
+
 Public Property Get SelectedItemText() As String
     SelectedItemText = This.SelectedItemText
 End Property

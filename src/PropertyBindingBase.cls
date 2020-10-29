@@ -264,7 +264,7 @@ Private Property Get CanApplyToTarget() As Boolean
     CanApplyToTarget = Not This.Applying And This.Mode <> OneWayToSource And (This.Mode <> OneTimeBinding Or Not This.Applied)
 End Property
 
-Public Sub ApplyToTarget(Optional ByVal ValidationValue As Variant)
+Public Sub ApplyToTarget()
 'reads from the source and writes to the target.
     
     If Not CanApplyToTarget Then Exit Sub
@@ -482,7 +482,7 @@ End Function
 Private Function ResolvePropertyPath(ByVal Source As Object, ByVal PropertyPath As String) As Object
     
     Dim Parts As Variant
-    Parts = Strings.Split(PropertyPath, ".")
+    Parts = VBA.Strings.Split(PropertyPath, ".")
     
     If UBound(Parts) = LBound(Parts) Then
         Set ResolvePropertyPath = Source
@@ -497,7 +497,7 @@ End Function
 
 Private Function ResolvePropertyName(ByVal PropertyPath As String) As String
     Dim Parts As Variant
-    Parts = Strings.Split(PropertyPath, ".")
+    Parts = VBA.Strings.Split(PropertyPath, ".")
     ResolvePropertyName = Parts(UBound(Parts))
 End Function
 

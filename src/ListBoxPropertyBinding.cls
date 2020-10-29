@@ -46,10 +46,16 @@ Optional ByVal StringFormat As IStringFormatter, _
 Optional ByVal ValidationAdorner As IDynamicAdorner) As IPropertyBinding
     
     Dim LocalTargetProperty As String
+    Dim SourceValue As Variant
     If IsMissing(TargetProperty) Then
-        LocalTargetProperty = InferTargetPropertyFromSource(Source, outMode:=Mode)
+        If Mode = OneTimeBinding Or Mode = OneWayBinding Then
+            LocalTargetProperty = InferTargetPropertyFromSource(Source, outValue:=SourceValue)
+        Else
+            LocalTargetProperty = InferTargetPropertyFromSource(Source, outMode:=Mode, outValue:=SourceValue)
+        End If
     Else
         LocalTargetProperty = TargetProperty
+        Source.TryReadPropertyValue SourceValue
     End If
     
     Dim BindingBase As PropertyBindingBase
@@ -64,6 +70,11 @@ Optional ByVal ValidationAdorner As IDynamicAdorner) As IPropertyBinding
     
     Dim Result As ListBoxPropertyBinding
     Set Result = New ListBoxPropertyBinding
+    If IsArray(SourceValue) Then
+        Target.ColumnCount = UBound(SourceValue) - LBound(SourceValue) + 1
+        Target.IntegralHeight = False
+        Target.List = Excel.Application.Transpose(SourceValue)
+    End If
     
     If Not Validator Is Nothing Then
         BindingBase.AsINotifyValidationError.RegisterHandler ValidationManager
@@ -74,20 +85,21 @@ Optional ByVal ValidationAdorner As IDynamicAdorner) As IPropertyBinding
     
 End Function
 
-Private Function InferTargetPropertyFromSource(ByVal Source As IBindingPath, ByRef outMode As MVVM.BindingMode) As String
+Private Function InferTargetPropertyFromSource(ByVal Source As IBindingPath, Optional ByRef outMode As MVVM.BindingMode, Optional ByRef outValue As Variant) As String
     Dim Result As String
     Dim SourceValue As Variant
     If Source.TryReadPropertyValue(outValue:=SourceValue) Then
+        
         Select Case True
             Case VarType(SourceValue) = VbVarType.vbLong, _
                  VarType(SourceValue) = VbVarType.vbInteger, _
                  VarType(SourceValue) = VbVarType.vbDouble, _
                  VarType(SourceValue) = VbVarType.vbSingle, _
-                 VarType(SourceValue) = VbVarType.vbByte, _
+                 VarType(SourceValue) = VbVarType.vbByte
                 Result = "ListIndex"
             Case VarType(SourceValue) = VbVarType.vbString
                 Result = "Text"
-            Case IsArray(SourceValue) Or VarType(SourceValue) = VbVarType.vbArray
+            Case IsArray(SourceValue) And VarType(SourceValue) = VbVarType.vbArray
                 Debug.Print TypeName(Me) & ": binding source [" & Source.ToString & "] one-way."
                 outMode = MVVM.BindingMode.OneWayBinding
                 Result = "List"
@@ -100,6 +112,7 @@ Private Function InferTargetPropertyFromSource(ByVal Source As IBindingPath, ByR
         Debug.Print TypeName(Me) & ": Could not read source property value; binding to default target property."
         Result = DefaultTargetControlProperty
     End If
+    outValue = SourceValue
     InferTargetPropertyFromSource = Result
 End Function
 
@@ -110,6 +123,7 @@ Public Sub InjectBindingInfo(ByVal BindingInfo As PropertyBindingBase)
     GuardClauses.GuardDoubleInitialization This.Handler, TypeName(Me)
     Set This.Base = BindingInfo
     Set This.Handler = BindingInfo
+    Set TargetEventSource = BindingInfo.Target.Context
     This.Base.AsIControlEvents.RegisterHandler Me
 End Sub
 
